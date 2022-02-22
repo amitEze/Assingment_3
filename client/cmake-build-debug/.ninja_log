@@ -1,0 +1,7 @@
+# ninja log v5
+3	12147	1645454230867780701	CMakeFiles/assignment3.dir/src/echoClient.cpp.o	8d57cea8a4aa14cf
+2	61	1645454316082881736	build.ninja	33c57819438ae404
+12152	17343	1645454236063929646	CMakeFiles/assignment3.dir/src/connectionHandler.cpp.o	cdba23ef1d1f3d38
+3	1784	1645454220507503489	CMakeFiles/assignment3.dir/src/main.cpp.o	1b735558d03cd53e
+1784	13253	1645454231971811802	CMakeFiles/assignment3.dir/src/Task.cpp.o	989b57a0a28d9788
+0	48	1645454316082881736	build.ninja	33c57819438ae404
