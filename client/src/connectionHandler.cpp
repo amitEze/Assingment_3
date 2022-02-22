@@ -53,7 +53,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
     while(line[ind]!=' ')
         ind++;
     string command = line.substr(0,ind);
-    if(command.compare("REGISTER")==0){
+    if(command=="REGISTER"){
         short opCode=1;
         char opC[2]=".";
         shortToBytes(opCode,opC);
