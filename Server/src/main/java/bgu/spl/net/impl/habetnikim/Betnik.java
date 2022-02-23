@@ -4,6 +4,8 @@ import bgu.spl.net.srv.ConnectionHandler;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Betnik {
@@ -17,7 +19,7 @@ public class Betnik {
     ConcurrentLinkedQueue<Betnik> followers = new ConcurrentLinkedQueue<Betnik>();
     ConcurrentLinkedQueue<Betnik> BlockedBy = new ConcurrentLinkedQueue<Betnik>();
     ConcurrentLinkedQueue<String> posts = new ConcurrentLinkedQueue<String>();
-    ConcurrentLinkedQueue<String> unseeNotifications = new ConcurrentLinkedQueue<String>();
+    ConcurrentLinkedQueue<List<String>> unseeNotifications = new ConcurrentLinkedQueue<List<String>>();
     ConcurrentLinkedQueue<String> pms = new ConcurrentLinkedQueue<String>();
 
     public Betnik(String userName, String passWord, String bDay){
@@ -42,7 +44,7 @@ public class Betnik {
 
     public  ConcurrentLinkedQueue<Betnik> getFollowers(){return followers;}
 
-    public ConcurrentLinkedQueue<String> getUnseeNotifications(){return unseeNotifications;}
+    public ConcurrentLinkedQueue<List<String>> getUnseeNotifications(){return unseeNotifications;}
 
     public ConcurrentLinkedQueue<Betnik> getBlockedBy(){return BlockedBy;}
 
@@ -51,7 +53,7 @@ public class Betnik {
     public void addPM(String pm){pms.add(pm);}
     public void setConnectionId(int id){this.connectionId=id;}
     public int getConnectionId(){return connectionId;}
-    public void addNotification(String msg){unseeNotifications.add(msg);}
+    public void addNotification(List<String> notf){unseeNotifications.add(notf);}
     public void addBlocker(Betnik blocker){
         BlockedBy.add(blocker);
         following.remove(blocker);

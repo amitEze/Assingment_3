@@ -48,8 +48,10 @@ public class ConnectionsImpl<T> implements Connections<T> {
         users.add(u);
     }
 
-    public void addHandelr(ConnectionHandler handler){
+    public int addHandelr(ConnectionHandler handler){
+        int tmp = clientId.get();
         clientsHandlers.put(clientId.getAndIncrement(),handler);
+        return tmp;
     }
 
 

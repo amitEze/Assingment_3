@@ -5,6 +5,7 @@ import bgu.spl.net.api.bidi.Connections;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -25,40 +26,56 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
     }
 
     @Override
-    public void process(Object message) {
+    public void process(Object msg) {
+        System.out.println("Protocol Process: ");
+        String message = ((LinkedList<String>)msg).remove(0);
         String opCode=minCutMaxFlow((String)message,1);
         Betnik userMe = getUser();
-        System.out.println(Short.valueOf(opCode));
-        short actuallyOpCode = Short.valueOf(opCode);
-        String notification = shorToString((short)9)+';'+shorToString(actuallyOpCode); //should i enter here a ;?
-        String ack = shorToString((short) 10)+';'+shorToString(actuallyOpCode);
-        String error = shorToString((short)11)+';'+shorToString(actuallyOpCode);
+        List<String> notification = new LinkedList<String>();
+        notification.add("09");
+        List<String> ack = new LinkedList<String>();
+        ack.add("10");
+        List<String> error = new LinkedList<String>();
+        error.add("11");
+        System.out.println("opCode :"+opCode);
 
         switch (opCode){
             case "1":
                 //case register
+                ack.add("01");
+                error.add("01");
+                System.out.println("register");
                 String userName=minCutMaxFlow((String)message,2);
                 String passWord=minCutMaxFlow((String)message,3);
                 String bDay=minCutMaxFlow((String)message,4);
-                Betnik user=new Betnik(userName,passWord,bDay);//might need to calculate age here
-                betShlita.addUser(user);
-                betShlita.send(clientId,ack);
+                if(getUserByName(userName)==null) {
+                    Betnik user = new Betnik(userName, passWord, bDay);//might need to calculate age here
+                    System.out.println("username:" + userName + " pass: " + passWord + " bday: " + bDay);
+                    betShlita.addUser(user);
+                    betShlita.send(clientId, ack);
+                }else{
+                    betShlita.send(clientId,error);
+                }
+                break;
             case "2":
                 //case login
+
+                ack.add("02");
+                error.add("02");
+                System.out.println("login");
                 String uName=minCutMaxFlow((String)message,2);
                 String pWord=minCutMaxFlow((String)message,3);
                 String captcha=((String) message).substring(((String) message).length()-2,((String) message).length()-1);
+                System.out.println("Login :"+uName+" pass: "+pWord);
                 if(captcha.getBytes(StandardCharsets.UTF_8)[0]==1){
                     Queue<Betnik> tryLog=betShlita.getUsers();
                     boolean logged=false;
                     for(Betnik b : tryLog){
                         if(b.getUserName().equals(uName)) {
                             if (b.getPassWord().equals(pWord)) {
-                                if(b.getCHandler()==null) {
                                     b.setHandler(betShlita.getCHandler(clientId));
                                     b.setConnectionId(clientId);
                                     logged=true;
-                                }
                             }
                         }
                     }
@@ -68,20 +85,25 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                     else{
                         betShlita.send(clientId,ack);
                     //need to push all posts and PM that the user missed************
-                        Queue<String> toPush=getUser().getUnseeNotifications();
-                        for(String s: toPush){
+                        ConcurrentLinkedQueue<List<String>> toPush = getUser().getUnseeNotifications();
+                        for(List<String> s: toPush){
                             betShlita.send(clientId,s);
                             toPush.remove(s);
                         }
                         }
                     }
+                break;
             case "3":
                 //case logout
+                ack.add("03");
+                error.add("03");
                 Queue<Betnik> users = betShlita.getUsers();
                 boolean loggedOut=false;
                 for(Betnik b : users) {
                     if (betShlita.getCHandler(clientId) == b.getCHandler()){
-                        b.setHandler(null);
+                        if(b.getConnectionId()==clientId){
+                            b.setHandler(null);
+                        }
                         b.setConnectionId(-1);
                         loggedOut=true;
                     }
@@ -95,8 +117,11 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                     shouldTerminate=true;
                     betShlita.disconnect(clientId);
                 }
+                break;
             case "4":
                 //follow/unfollow
+                ack.add("04");
+                error.add("04");
                 String follow = ((String) message).substring(2,4);
                 String toFollow = (String)((String) message).substring(4,((String) message).length());
                 if(follow.getBytes(StandardCharsets.UTF_8)[0]==0)
@@ -117,7 +142,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                             //actualy follow
                             userMe.getFollowing().add(ushiya);
                             ushiya.getFollowers().add(userMe);
-                            ack=ack+toFollow+'\0';
+                            ack.add(toFollow+'\0');
                             betShlita.send(clientId,ack);
                         } else { //userme already following this user or blocked by him or blocked him
                             betShlita.send(clientId,error);
@@ -141,7 +166,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                         if(isFollowed){
                             userMe.getFollowing().remove(ugly);
                             ugly.getFollowers().remove(userMe);
-                            ack = ack+toFollow+'\0';
+                            ack.add(toFollow+'\0');
                             betShlita.send(clientId,ack);
                         }
                         else
@@ -153,13 +178,15 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                         betShlita.send(clientId,error);
                     }
                 }
-
+                break;
             case "5":
                 //case post
+                ack.add("05");
+                error.add("05");
                 if(userMe!=null) {
                     String content = minCutMaxFlow((String)message,2);
                     LinkedList<Betnik> usersInContent = new LinkedList<Betnik>();
-                    notification = notification+"\1"+userMe.getUserName()+'\0'+content+'\0';
+                    notification.add("\1"+userMe.getUserName()+'\0'+content+'\0');
                     for(int i=0; i<content.length()-1;i++){ //finds all usernames in content
                         if(content.charAt(i)=='@'){
                             int endOfUsername=i+1;
@@ -202,13 +229,16 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 }else{
                     betShlita.send(clientId,error);
                 }
+                break;
             case "6":
                 //case pm
+                ack.add("06");
+                error.add("06");
                 String dest=minCutMaxFlow((String) message,2);
                 String content=minCutMaxFlow((String) message,3);
                 String timing= minCutMaxFlow((String)message,4);
                 if(getUser()!=null){ //logged in
-                    notification = notification+"\0"+userMe.getUserName()+'\0'+content+'\0';
+                    notification.add("\0"+userMe.getUserName()+'\0'+content+'\0');
                     if(getUserByName(dest)!=null){
                         if(getUser().getFollowing().contains(getUserByName(dest))){
                             for(String w:bannedWords){ //filtering message
@@ -235,8 +265,11 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 else{
                     betShlita.send(clientId,error);
                 }
+                break;
             case "7":
                 //logstat
+                ack.add("07");
+                error.add("07");
                 if(userMe!=null){
                     ConcurrentLinkedQueue<Betnik> loggedInUsers = betShlita.getUsers();
                     LinkedList<String> loggedStats = new LinkedList<String>();
@@ -245,46 +278,58 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                         if(!blockedBy.contains(b) && !b.getBlockedBy().contains(userMe)){
                             String bStat = "";
                             bStat = bStat+b.getAge();
-                            bStat = " " + bStat + shorToString((short) b.getPosts().size());
-                            bStat = " " + bStat + shorToString((short) b.getFollowers().size());
-                            bStat = " " + bStat + shortToBytes((short) b.getFollowing().size());
+                            bStat = bStat+" "+b.getPosts().size();
+                            bStat =bStat+" "+b.getFollowers().size();
+                            bStat =bStat+" "+b.getFollowing().size();
                             loggedStats.add(bStat);
                         }
                     }
                     while(!loggedStats.isEmpty()){
-                        betShlita.send(clientId,ack+loggedStats.remove());
+                        if(ack.size()==3)
+                            ack.remove(2);
+                        betShlita.send(clientId,ack.add(loggedStats.remove()));
                     }
                 }else{
                     betShlita.send(clientId,error);
                 }
+                break;
             case "8":
+                ack.add("08");
+                error.add("08");
                 if(userMe!=null){
                     String onlyUsers = minCutMaxFlow((String) message,2);
                     LinkedList<String> statsToSend = new LinkedList<String>();
                     int j=0;
                     for(int i=0; i<onlyUsers.length();i++){
                         if(onlyUsers.charAt(i)=='|' || onlyUsers.charAt(i)=='\0'){
-                            Betnik userToStatus = getUserByName(onlyUsers.substring(i,j));
+                            Betnik userToStatus = getUserByName(onlyUsers.substring(j,i));
                             if(userToStatus!=null && !(userMe.getBlockedBy().contains(userToStatus)) && !userToStatus.getBlockedBy().contains(userMe)){  //***** and not blocked
                                 String s = "";
                                 j=i;
                                 s = s+ userToStatus.getAge();
-                                s=" "+s+shorToString((short)userToStatus.getPosts().size());
-                                s=" "+s+shorToString((short) userToStatus.getFollowers().size());
-                                s=" "+s+shorToString((short) userToStatus.getFollowing().size());
+                                s+=" "+userToStatus.getPosts().size();
+                                s+=" "+userToStatus.getFollowers().size();
+                                s+=" "+userToStatus.getFollowing().size();
                                 statsToSend.add(s);
                             }else{
+
                                 betShlita.send(clientId,error);
                                 break;
                             }
                         }
                     }
-                    while(!statsToSend.isEmpty())
-                        betShlita.send(clientId,ack+statsToSend.remove());
+                    while(!statsToSend.isEmpty()) {
+                        if(ack.size()==3)
+                            ack.remove(2);
+                        betShlita.send(clientId, ack.add(statsToSend.remove()));
+                    }
                 }else{
                     betShlita.send(clientId,error);
                 }
+                break;
             case "12":
+                ack.add("12");
+                error.add("12");
                 String stolker=minCutMaxFlow((String) message,2);
                 if(getUserByName(stolker)!=null){
                     Betnik beniSela= getUserByName(stolker);
@@ -298,6 +343,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 else{
                     betShlita.send(clientId,error);
                 }
+                break;
         }
     }
 
