@@ -85,7 +85,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
     }
     if(command=="FOLLOW"){
         short opCode=4;
-        char opC[2]=".";
+        char opC[2]=".";//make sure that the op code inserted correctly
         shortToBytes(opCode,opC);
         if(line[ind+1]=='0')
             return opC+'\0'+line.substr(ind+3)+'\0';
