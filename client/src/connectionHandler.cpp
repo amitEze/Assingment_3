@@ -54,36 +54,42 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         ind++;
     string command = line.substr(0,ind);
     if(command=="REGISTER"){
-        short opCode=1;
-        char opC[2]=".";
-        shortToBytes(opCode,opC);
+        char opC[2];
+        shortToBytes((short)1,opC);
         msg=line.substr(ind+1);
         std::replace(msg.begin(),msg.end(),' ','\0');
-        msg=opC+msg;
-        return msg+'\0'+';';
+        msg=opC[1]+msg;
+        msg=opC[0]+msg;
+        std::cout<< "opcode = " << opC<<endl;
+        std::cout<< "msg = " << msg<<endl;
+        return msg+'\0';
     }
     if(command=="LOGIN"){
-        short opCode=2;
-        char opC[2]=".";
-        shortToBytes(opCode,opC);
+        char opC[2];
+        shortToBytes((short)2,opC);
         msg=line.substr(ind+1);
         std::replace(msg.begin(),msg.end(),' ','\0');
-        msg=opC+msg;
-        return msg+';';
+        msg=opC[1]+msg;
+        msg=opC[0]+msg;
+        std::cout<< opC<<endl;
+        std::cout<< msg<<endl;
+        return msg+'\0';
     }
     if(command=="LOGOUT"){
         short opCode=3;
-        char opC[2]=".";
+        char opC[2];
         shortToBytes(opCode,opC);
-        return opC+';';
+        msg = opC[1] + msg;
+        msg = opC[0] + msg;
+        return msg+"\0";
     }
-    if(command"FOLLOW"){
+    if(command=="FOLLOW"){
         short opCode=4;
         char opC[2]=".";
         shortToBytes(opCode,opC);
         if(line[ind+1]=='0')
-            return opC+'\0'+line.substr(ind+3)+'\0'+';';
-        else return opC+'a'+line.substr(ind+3)+'\0'+';';
+            return opC+'\0'+line.substr(ind+3)+'\0';
+        else return opC+'a'+line.substr(ind+3)+'\0';
     }
     if(command=="POST"){
         short opCode=5;
@@ -91,7 +97,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
         msg=opC+msg;
-        return msg+'\0'+';';
+        return msg+'\0';
     }
     if(command=="PM"){
         short opCode=6;
@@ -100,7 +106,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=line.substr(ind+1);
         int ind2=msg.find(" ");
         msg.replace(ind2,1,"\0");
-        msg=msg+'\0'+currentDateTime()+'\0'+';';
+        msg=msg+'\0'+currentDateTime()+'\0';
         return opC+msg;
     }
     if(command=="LOGSTAT"){
@@ -114,14 +120,14 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         char opC[2]=".";
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
-        return opC+msg+'\0'+';';
+        return opC+msg+'\0';
     }
     if(command=="BLOCK"){
         short opCode=12;
         char opC[2]=".";
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
-        return opC+msg+'\0'+';';
+        return opC+msg+'\0';
     }
     return "not a valid command";
 }
@@ -133,8 +139,13 @@ short bytesToShort(char* bytesArr){
 }
 
 string ConnectionHandler::prepareToPrint(std::string ans) {
-    char* ch=strcpy(new char[2],ans.substr(0,2).c_str());
-    short opCode=bytesToShort(ch);
+    //char* ch=strcpy(new char[2],ans.substr(0,2).c_str());
+    std::cout<<ans<<std::endl;
+    char opC[2];
+    opC[0]=ans[0];
+    opC[1]=ans[1];
+    short opCode=bytesToShort(opC);
+    std::cout<<opCode<<std::endl;
     if(opCode==9){//case notification
         char* notftype=strcpy(new char[1],ans.substr(2,3).c_str());
         string info = ans.substr(3);
@@ -150,22 +161,28 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
     }
 
     if(opCode==10){//case ack
-        char* opc=strcpy(new char[2],ans.substr(2,4).c_str());
-        short operation=bytesToShort(opc);
+        //char* opc=strcpy(new char[2],ans.substr(2,4).c_str());
+        opC[0]=ans[2];
+        opC[1]=ans[3];
+        short operation=bytesToShort(opC);
+        std::cout<<operation<<std::endl;
+        if(operation==1){
+            return "ACK 01";
+        }
         if(operation==2){
-            return "ACK"+operation;
+            return "ACK 02";
         }
         if(operation==3){
             return "\0";
         }
         if(operation==4){
-            return "ACK 4"+ans.substr(4);
+            return "ACK 04"+ans.substr(4);
         }
         if(operation==5){
-            return "ACK 5";
+            return "ACK 05";
         }
         if(operation==6){
-            return "ACK 6";
+            return "ACK 06";
         }
         if(operation==7){
             char* a=strcpy(new char[2],ans.substr(4,6).c_str());
@@ -201,9 +218,9 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
         char* opc=strcpy(new char[2],ans.substr(2).c_str());
         short operation=bytesToShort(opc);
         string finalcountdown = std::to_string(int(operation));
-        return "EROR"+finalcountdown;
+        return "ERROR"+finalcountdown;
     }
-
+    return "error - without id";
 }
 
 
@@ -240,11 +257,11 @@ bool ConnectionHandler::sendBytes(const char bytes[], int bytesToWrite) {
 }
  
 bool ConnectionHandler::getLine(std::string& line) {
-    return getFrameAscii(line, '\n');
+    return getFrameAscii(line, ';');
 }
 
 bool ConnectionHandler::sendLine(std::string& line) {
-    return sendFrameAscii(line, '\n');
+    return sendFrameAscii(line, ';');
 }
  
 bool ConnectionHandler::getFrameAscii(std::string& frame, char delimiter) {
