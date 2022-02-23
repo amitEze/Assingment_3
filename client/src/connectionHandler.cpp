@@ -62,7 +62,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=opC+msg;
         return msg+'\0'+';';
     }
-    if(command.compare("LOGIN")==0){
+    if(command=="LOGIN"){
         short opCode=2;
         char opC[2]=".";
         shortToBytes(opCode,opC);
@@ -71,13 +71,13 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=opC+msg;
         return msg+';';
     }
-    if(command.compare("LOGOUT")==0){
+    if(command=="LOGOUT"){
         short opCode=3;
         char opC[2]=".";
         shortToBytes(opCode,opC);
         return opC+';';
     }
-    if(command.compare("FOLLOW")==0){
+    if(command"FOLLOW"){
         short opCode=4;
         char opC[2]=".";
         shortToBytes(opCode,opC);
@@ -85,7 +85,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
             return opC+'\0'+line.substr(ind+3)+'\0'+';';
         else return opC+'a'+line.substr(ind+3)+'\0'+';';
     }
-    if(command.compare("POST")==0){
+    if(command=="POST"){
         short opCode=5;
         char opC[2]=".";
         shortToBytes(opCode,opC);
@@ -93,7 +93,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=opC+msg;
         return msg+'\0'+';';
     }
-    if(command.compare("PM")==0){
+    if(command=="PM"){
         short opCode=6;
         char opC[2]=".";
         shortToBytes(opCode,opC);
@@ -103,20 +103,20 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=msg+'\0'+currentDateTime()+'\0'+';';
         return opC+msg;
     }
-    if(command.compare("LOGSTAT")==0){
+    if(command=="LOGSTAT"){
         short opCode=7;
         char opC[2]=".";
         shortToBytes(opCode,opC);
         return opC;
     }
-    if(command.compare("STAT")==0){
+    if(command=="STAT"){
         short opCode=8;
         char opC[2]=".";
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
         return opC+msg+'\0'+';';
     }
-    if(command.compare("BLOCK")==0){
+    if(command=="BLOCK"){
         short opCode=12;
         char opC[2]=".";
         shortToBytes(opCode,opC);
