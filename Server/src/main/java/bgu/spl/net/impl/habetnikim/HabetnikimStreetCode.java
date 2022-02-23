@@ -13,6 +13,7 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
     short opcode;
     @Override
     public List<String> decodeNextByte(byte nextByte) {
+        System.out.println("received " + (int) nextByte);
         if(nextByte==';') {
             System.out.println("Encoderdecoder: " );
             msgData = new String(bytes, 2, len);
@@ -22,10 +23,10 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
             System.out.println("New message: "+msgData+" bytes array :"+Arrays.toString(bytes));
             return sofisofi;
         }
+        pushByte(nextByte);
         if(len==2){
             opcode=bytesToShort(bytes);
         }
-        pushByte(nextByte);
         return null;
     }
 
