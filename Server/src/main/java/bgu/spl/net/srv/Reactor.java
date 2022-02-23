@@ -44,7 +44,7 @@ public class Reactor<T> implements Server<T> {
             serverSock.bind(new InetSocketAddress(port));
             serverSock.configureBlocking(false);
             serverSock.register(selector, SelectionKey.OP_ACCEPT);
-			System.out.println("[Server started");
+			System.out.println("Server started");
 
             while (!Thread.currentThread().isInterrupted()) { //while server still running
 
@@ -99,8 +99,8 @@ public class Reactor<T> implements Server<T> {
                 clientChan,
                 this);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
-        //should add to connections hashmap?***
-        ConnectionsImpl.getInstance().addHandelr(handler);
+        //should add to connections hashmap?*** vadayyy
+
         //*****
     }
 
