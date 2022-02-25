@@ -73,7 +73,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=opC[0]+msg;
         std::cout<< opC<<endl;
         std::cout<< msg<<endl;
-        return msg+'\0';
+        return msg+'\0'+'\1';
     }
     if(command=="LOGOUT"){
         short opCode=3;
@@ -85,11 +85,27 @@ std::string ConnectionHandler::msgFormat(std::string line) {
     }
     if(command=="FOLLOW"){
         short opCode=4;
-        char opC[2]=".";//make sure that the op code inserted correctly
+        char opC[4];//make sure that the op code inserted correctly
         shortToBytes(opCode,opC);
-        if(line[ind+1]=='0')
-            return opC+'\0'+line.substr(ind+3)+'\0';
-        else return opC+'a'+line.substr(ind+3)+'\0';
+        char follow[2];
+        msg = line.substr(ind+3);
+        std::cout<< "follow code: "<<line[ind+1]<<endl;
+        if(line[ind+1]=='0'){
+            shortToBytes((short)0,follow);
+            opC[2]=follow[0];
+            opC[3]=follow[1];
+            msg=opC[3]+msg;
+            msg=opC[2]+msg;
+            msg=opC[1]+msg;
+            msg=opC[0]+msg;
+            std::cout<< "RETURN VALUE: "<<msg<<endl;
+            return msg+'\0';}
+        else {
+            shortToBytes((short)1,follow);
+            opC[2]=follow[0];
+            opC[3]=follow[1];
+            std::cout<< "follow opcodes: "<<opC<<endl;
+            return opC+line.substr(ind+3)+'\0';}
     }
     if(command=="POST"){
         short opCode=5;
@@ -129,7 +145,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=line.substr(ind+1);
         return opC+msg+'\0';
     }
-    return "not a valid command";
+    return "BAD";
 }
 
 short bytesToShort(char* bytesArr){
@@ -140,14 +156,13 @@ short bytesToShort(char* bytesArr){
 
 string ConnectionHandler::prepareToPrint(std::string ans) {
     //char* ch=strcpy(new char[2],ans.substr(0,2).c_str());
-    std::cout<<ans<<std::endl;
     char opC[2];
     opC[0]=ans[0];
     opC[1]=ans[1];
     short opCode=bytesToShort(opC);
-    std::cout<<opCode<<std::endl;
+    std::cout<<"OPCODE : "<<opCode<<std::endl;
     if(opCode==9){//case notification
-        char* notftype=strcpy(new char[1],ans.substr(2,3).c_str());
+        char* notftype = strcpy(new char[1],ans.substr(2,3).c_str());
         string info = ans.substr(3);
         int i=0;
         while(info[i] !='\0')
@@ -176,7 +191,7 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
             return "\0";
         }
         if(operation==4){
-            return "ACK 04"+ans.substr(4);
+            return "ACK 04 "+ans.substr(4);
         }
         if(operation==5){
             return "ACK 05";
@@ -215,10 +230,11 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
         }
     }
     if(opCode==11){//case error
-        char* opc=strcpy(new char[2],ans.substr(2).c_str());
-        short operation=bytesToShort(opc);
+        opC[0]=ans[2];
+        opC[1]=ans[3];
+        short operation=bytesToShort(opC);
         string finalcountdown = std::to_string(int(operation));
-        return "ERROR"+finalcountdown;
+        return "ERROR "+finalcountdown;
     }
     return "error - without id";
 }

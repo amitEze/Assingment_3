@@ -14,11 +14,13 @@ void Task::operator()() {
         std::string line(buf);
         int len = line.length();
         std::string msg = conn_.msgFormat(line);
-        if (!conn_.sendLine(msg)) {
-            std::cout << "Disconnected. Exiting...\n" << std::endl;
-            break;
-        }
-        // connectionHandler.sendLine(line) appends '\n' to the message. Therefor we send len+1 bytes.
-        std::cout << "Sent " << len + 1 << " bytes to server" << std::endl;
+        if(msg != "BAD"){
+            if (!conn_.sendLine(msg)) {
+                std::cout << "Disconnected. Exiting...\n" << std::endl;
+                break;
+            }
+            // connectionHandler.sendLine(line) appends '\n' to the message. Therefor we send len+1 bytes.
+            std::cout << "Sent " << len + 1 << " bytes to server" << std::endl;}
+        else std::cout<<"not a vallid command!"<<std::endl;
     }
 }

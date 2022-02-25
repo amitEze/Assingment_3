@@ -40,7 +40,9 @@ int main (int argc, char *argv[]) {
 		// A C string must end with a 0 char delimiter.  When we filled the answer buffer from the socket
 		// we filled up to the \n char - we must make sure now that a 0 char is also present. So we truncate last character.
         answer.resize(len-1);
+        //std::cout<<"ANS RECVD "<<answer<<std::endl;
         answer= connectionHandler.prepareToPrint(answer);
+        //std::cout<<"ANS PROCCESSED "<<answer<<std::endl;
         if(answer=="\0"){
             shutDown=true;
             answer="ACK 3";
