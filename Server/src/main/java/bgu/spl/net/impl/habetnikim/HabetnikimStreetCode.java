@@ -13,10 +13,10 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
     short opcode;
     @Override
     public List<String> decodeNextByte(byte nextByte) {
-        System.out.println("received " + (int) nextByte);
+        //System.out.println("received " + (int) nextByte);
         if(nextByte==';') {
             System.out.println("Encoderdecoder: " );
-            msgData = new String(bytes, 2, len);
+            msgData = new String(bytes, 2, len-2);
             len=0;
             List<String> sofisofi = new LinkedList<String>();
             sofisofi.add(String.valueOf(opcode)+'\0'+msgData);
@@ -35,8 +35,8 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
         String opCode=message.remove(0);
         String ackOpCode;
         switch (opCode){
-            case "09": {//****************NEED TO ADD THE END MESSAGE SIGN!! ";" IN BYTES!!
-                byte[] data = message.remove(0).getBytes(StandardCharsets.UTF_8);
+            case "09": {//****************need to make sure ; works as expected
+                byte[] data = (message.remove(0)+";").getBytes(StandardCharsets.UTF_8);
                 byte[] aOpCode = shortToBytes(Short.valueOf(opCode));
                 byte[] encodedMsg = new byte[2 + data.length];
                 for (int k = 0; k < encodedMsg.length; k++) {
@@ -46,7 +46,8 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
                         encodedMsg[k] = data[k - 2];
                     }
                 }
-                break;
+                System.out.println("notification: "+Arrays.toString(encodedMsg));
+                return encodedMsg;
             }
             case "10": {
                 ackOpCode = message.remove(0);
@@ -69,7 +70,7 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
                         System.out.println(Arrays.toString(encodedMsg));
                         return encodedMsg;
                     }
-                    if (ackOpCode.compareTo("07") == 0 || ackOpCode.compareTo("08") == 0) {//NEED TO ADD ENDLINE!!
+                    if (ackOpCode.compareTo("07") == 0 || ackOpCode.compareTo("08") == 0) {
                         String info = message.remove(0);
                         String[] infos = info.split(" ");
                         byte[] infpot = new byte[8];
@@ -81,7 +82,7 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
                             infpot[j] = inBytes[1];
                             j++;
                         }
-                        byte[] encodedMsg = new byte[12];
+                        byte[] encodedMsg = new byte[13];//need to make sure ; works as expected
                         for (int i = 0; i < 4 + infpot.length; i++) {
                             if (i < 2)
                                 encodedMsg[i] = aOpCode[i];
@@ -90,8 +91,10 @@ public class HabetnikimStreetCode implements MessageEncoderDecoder<List<String>>
                             } else {
                                 encodedMsg[i] = infpot[i - 4];
                             }
-                            return encodedMsg;
+                            //System.out.println(Arrays.toString(";".getBytes(StandardCharsets.UTF_8)));
                         }
+                        encodedMsg[12]=";".getBytes(StandardCharsets.UTF_8)[0];
+                        return encodedMsg;
                     }
                 } else {//regular ack case
                     byte[] bOpCode = shortToBytes(Short.valueOf(ackOpCode));

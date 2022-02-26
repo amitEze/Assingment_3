@@ -60,7 +60,7 @@ public class Betnik {
         followers.remove(blocker);
     }
     public short getAge(){
-        LocalDate now=LocalDate.of(2022,1,14);
+        LocalDate now=LocalDate.of(2022,2,27);
         Integer year=Integer.valueOf(bDay.substring(6));
         Integer month=Integer.valueOf(bDay.substring(3,5));
         Integer day=Integer.valueOf(bDay.substring(0,2));

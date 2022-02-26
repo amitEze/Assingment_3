@@ -71,7 +71,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         std::replace(msg.begin(),msg.end(),' ','\0');
         msg=opC[1]+msg;
         msg=opC[0]+msg;
-        std::cout<< opC<<endl;
+        //std::cout<< opC<<endl;
         std::cout<< msg<<endl;
         return msg+'\0'+'\1';
     }
@@ -104,32 +104,45 @@ std::string ConnectionHandler::msgFormat(std::string line) {
             shortToBytes((short)1,follow);
             opC[2]=follow[0];
             opC[3]=follow[1];
+            msg=opC[3]+msg;
+            msg=opC[2]+msg;
+            msg=opC[1]+msg;
+            msg=opC[0]+msg;
             std::cout<< "follow opcodes: "<<opC<<endl;
-            return opC+line.substr(ind+3)+'\0';}
+            return msg+'\0';}
     }
     if(command=="POST"){
         short opCode=5;
-        char opC[2]=".";
+        char opC[2];
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
-        msg=opC+msg;
+        msg=opC[1]+msg;
+        msg=opC[0]+msg;
+        std::cout<<"posting opcode"<< opCode<< " and message :"<<msg<<std::endl;
         return msg+'\0';
     }
     if(command=="PM"){
         short opCode=6;
-        char opC[2]=".";
+        char opC[2];
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
         int ind2=msg.find(" ");
-        msg.replace(ind2,1,"\0");
+        msg=msg.substr(0,ind2)+'\0'+msg.substr(ind2+1);
+        //msg.replace(ind2,1,"\0");
+        //std::cout<<"after replacment: "<<msg<<std::endl;
         msg=msg+'\0'+currentDateTime()+'\0';
-        return opC+msg;
+        msg=opC[1]+msg;
+        msg=opC[0]+msg;
+        return msg;
     }
     if(command=="LOGSTAT"){
         short opCode=7;
-        char opC[2]=".";
+        char opC[2];
         shortToBytes(opCode,opC);
-        return opC;
+        msg="";
+        msg=opC[1]+msg;
+        msg=opC[0]+msg;
+        return msg;
     }
     if(command=="STAT"){
         short opCode=8;
@@ -162,17 +175,18 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
     short opCode=bytesToShort(opC);
     std::cout<<"OPCODE : "<<opCode<<std::endl;
     if(opCode==9){//case notification
-        char* notftype = strcpy(new char[1],ans.substr(2,3).c_str());
+        char notftype = ans[2];
         string info = ans.substr(3);
-        int i=0;
+        std:: replace(info.begin() ,info.end() , '\0',' ');
+       /* int i=0;
         while(info[i] !='\0')
             i++;
         string name = info.substr(0,i);
-        string content = info.substr(i+1,info.length()-2);
-        if(*notftype=='\0'){//case PM
-            return "NOTIFICATION PM "+name+content;
+        string content = info.substr(i+1,info.length()-2);*/
+        if(notftype=='\0'){//case PM
+            return "NOTIFICATION PM "+info;
         }
-        else return "NOTIFICATION POST "+name+content;// case post
+        else return "NOTIFICATION POST "+info;// case post
     }
 
     if(opCode==10){//case ack
@@ -180,7 +194,7 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
         opC[0]=ans[2];
         opC[1]=ans[3];
         short operation=bytesToShort(opC);
-        std::cout<<operation<<std::endl;
+        std::cout<<"print test oper: "<<operation<<std::endl;
         if(operation==1){
             return "ACK 01";
         }
@@ -191,7 +205,7 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
             return "\0";
         }
         if(operation==4){
-            return "ACK 04 "+ans.substr(4);
+            return "ACK 04  "+ans.substr(4);
         }
         if(operation==5){
             return "ACK 05";
@@ -200,15 +214,27 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
             return "ACK 06";
         }
         if(operation==7){
-            char* a=strcpy(new char[2],ans.substr(4,6).c_str());
+            //char* a=strcpy(new char[2],ans.substr(4,6).c_str());
+            char a[2];
+            a[0]=ans[4];
+            a[1]=ans[5];
             short age=bytesToShort(a);
             string iAge= std::to_string(int(age));
-            char* n=strcpy(new char[2],ans.substr(6,8).c_str());
+            //char* n=strcpy(new char[2],ans.substr(6,8).c_str());
+            char n[2];
+            n[0]=ans[6];
+            n[1]=ans[7];
             short numPosts=bytesToShort(n);
             string iNumPosts=std::to_string(int(numPosts));
-            char* nf1=strcpy(new char[2],ans.substr(8,10).c_str());
+            //char* nf1=strcpy(new char[2],ans.substr(8,10).c_str());
+            char nf1[2];
+            nf1[0]=ans[8];
+            nf1[1]=ans[9];
             string numOfFollowers=std::to_string(int(bytesToShort(nf1)));
-            char* nf2=strcpy(new char[2],ans.substr(10,12).c_str());
+            //char* nf2=strcpy(new char[2],ans.substr(10,12).c_str());
+            char nf2[2];
+            nf2[0]=ans[10];
+            nf2[1]=ans[11];
             string numOFFollowing=std::to_string(int(bytesToShort(nf2)));
             return "ACK 7 "+iAge+ " "+iNumPosts+" "+numOfFollowers+" "+numOFFollowing;
         }

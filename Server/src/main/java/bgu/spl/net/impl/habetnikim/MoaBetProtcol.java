@@ -31,7 +31,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
     public void process(Object msg) {
         System.out.println("Protocol Process: ");
         String message = ((LinkedList<String>)msg).remove(0);
-        String opCode=minCutMaxFlow((String)message,1);
+        String opCode=minCutMaxFlow(message,1);
         Betnik userMe = getUser();
         List<String> notification = new LinkedList<String>();
         notification.add("09");
@@ -40,7 +40,6 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
         List<String> error = new LinkedList<String>();
         error.add("11");
         System.out.println("opCode :"+opCode);
-
         switch (opCode){
             case "1":
                 //case register
@@ -64,11 +63,11 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 ack.add("02");
                 error.add("02");
                 if(!logged) {
-                    //System.out.println("login");
-                    String uName = minCutMaxFlow((String) message, 2);
-                    String pWord = minCutMaxFlow((String) message, 3);
-                    String captcha = ((String) message).substring(((String) message).length() - 1);
-                    System.out.println("Login :" + uName + " pass: " + pWord + "CAPTCH " + captcha);
+                    System.out.println("login message: "+message);
+                    String uName = minCutMaxFlow(message, 2);
+                    String pWord = minCutMaxFlow(message, 3);
+                    String captcha = message.substring(message.length() - 1);
+                    System.out.println("Login :" + uName + " pass: " + pWord + " CAPTCHA " + Arrays.toString(captcha.getBytes(StandardCharsets.UTF_8))+"  needed value: "+"\1".getBytes(StandardCharsets.UTF_8)[0]);
                 /*if(captcha.getBytes(StandardCharsets.UTF_8)[0]==1){
                     Queue<Betnik> tryLog=betShlita.getUsers();
                     boolean logged=false;
@@ -94,7 +93,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                         }
                         }
                     }*/
-                    if (captcha.getBytes(StandardCharsets.UTF_8)[0] == 49) {
+                    if (captcha.getBytes(StandardCharsets.UTF_8)[0] == 1) {
                         Queue<Betnik> tryLog = betShlita.getUsers();
                         for (Betnik b : tryLog) {
                             System.out.println(b.getUserName() + " -- " + b.getPassWord());
@@ -153,13 +152,13 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 //follow/unfollow
                 ack.add("04");
                 error.add("04");
-                String follow = ((String) message).substring(2,4);
+                short follow = bytesToShort((message).substring(2,4).getBytes(StandardCharsets.UTF_8));
                 //String toFollow = ((String) message).substring(4,message.length()-2);
-                String toFollow = minCutMaxFlow((String) message, 4);
-                if(follow.getBytes(StandardCharsets.UTF_8)[0]=='\0'&&follow.getBytes(StandardCharsets.UTF_8)[1]=='\0')
+                String toFollow = minCutMaxFlow(message.substring(4), 1);
+                if(follow == (short)0)
                 {
                     //case follow
-                    System.out.println("follow "+follow+"  bytes : "+Arrays.toString(follow.getBytes(StandardCharsets.UTF_8))+" to follow : " +toFollow);
+                    //System.out.println("follow "+follow+"  bytes : "+Arrays.toString(follow.getBytes(StandardCharsets.UTF_8))+" to follow : " +toFollow);
                     Betnik ushiya = getUserByName(toFollow);
                     System.out.println(ushiya.getUserName());
                     if(userMe!=null && ushiya!=null)
@@ -191,10 +190,12 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 {
                     //case unfollow
                     Betnik ugly = getUserByName(toFollow);
+                    System.out.println( userMe.getUserName() +" unfollowing... " + toFollow);
                     if(userMe!=null && ugly!=null && userMe.getCHandler()!=null){
                         Boolean isFollowed = false;
                         ConcurrentLinkedQueue<Betnik> iFollow = userMe.getFollowing();
                         for(Betnik b: iFollow) {
+                            //System.out.println(b.getUserName());
                             if(b==ugly)
                                 isFollowed=true;
                         }
@@ -219,26 +220,28 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 ack.add("05");
                 error.add("05");
                 if(userMe!=null) {
-                    String content = minCutMaxFlow((String)message,2);
+                    String content = minCutMaxFlow(message,2);
+                    System.out.println("content: "+content+"  "+content.length());
                     LinkedList<Betnik> usersInContent = new LinkedList<Betnik>();
                     notification.add("\1"+userMe.getUserName()+'\0'+content+'\0');
                     for(int i=0; i<content.length()-1;i++){ //finds all usernames in content
                         if(content.charAt(i)=='@'){
                             int endOfUsername=i+1;
-                            while(content.charAt(endOfUsername)!=' ' && content.charAt(endOfUsername)!='\0'){
+                            while( endOfUsername<content.length()-1 && content.charAt(endOfUsername)!=' '){
                                 endOfUsername++;
+                                System.out.println("endOfUsername: "+endOfUsername);
                             }
-                            Betnik u = getUserByName(content.substring(i+1,endOfUsername));
+                            Betnik u = getUserByName(content.substring(i+1,endOfUsername+1));
                             if(u!=null && !(userMe.getBlockedBy().contains(u))){
                                 usersInContent.add(u);
                             }
                             i=endOfUsername-1;
                         }
                     }
-                    userMe.getPosts().add(content); //adding message to the send user posts
+                    userMe.getPosts().add(content); //adding message to the user's posts
                     ConcurrentLinkedQueue<Betnik> followers = userMe.getFollowers();
                     LinkedList<Betnik> usersToSend = new LinkedList<Betnik>(usersInContent);
-                    for(Betnik b: followers) {
+                    for(Betnik b: followers) {//making sure the notification won't appear twice
                         boolean shouldAddhim=true;
                         for(Betnik bInContent: usersInContent){
                             if(bInContent==b){
@@ -250,7 +253,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                     }
                     for(Betnik b: usersToSend){
                         //send them messages
-                        ack=ack;
+                        //ack.add(content);
                         if(b.getCHandler()!=null){
                             betShlita.send(b.getConnectionId(),notification); //for sure?
                         }
@@ -270,12 +273,13 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 ack.add("06");
                 error.add("06");
                 String dest=minCutMaxFlow((String) message,2);
+                System.out.println("dest name "+dest);
                 String content=minCutMaxFlow((String) message,3);
                 String timing= minCutMaxFlow((String)message,4);
                 if(getUser()!=null){ //logged in
-                    notification.add("\0"+userMe.getUserName()+'\0'+content+'\0');
-                    if(getUserByName(dest)!=null){
-                        if(getUser().getFollowing().contains(getUserByName(dest))){
+                    //notification.add("\0"+userMe.getUserName()+'\0'+content+'\0');
+                    if(getUserByName(dest)!=null){//recipient registered
+                        if(getUser().getFollowing().contains(getUserByName(dest))){//following recipient
                             for(String w:bannedWords){ //filtering message
                                 if(content.contains(w)){
                                     content.replaceAll(w,"<filtered>");
@@ -283,6 +287,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                             }
                             getUser().addPM(content); //add pm to sending username pms list
                             if(getUserByName(dest).getCHandler()!=null){//connected so use send to print on his screen (use send func)
+                                notification.add("\0"+userMe.getUserName()+'\0'+content+" "+timing+'\0');
                                 betShlita.send(getUserByName(dest).getConnectionId(),notification);
                             } else{
                                 getUserByName(dest).addNotification(notification);
@@ -290,14 +295,17 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                             betShlita.send(getUser().getConnectionId(),ack); // send ack message to sending user
                         }//sending user isn't following dest user
                         else{
+                            System.out.println("error - not following recipient");
                             betShlita.send(clientId,error);
                         }
                     }//there's no username named dest
                     else{
+                        System.out.println("error - no username with such name");
                         betShlita.send(clientId,error);
                     }
                 }//sending user isn't online
                 else{
+                    System.out.println("error - not logged in");
                     betShlita.send(clientId,error);
                 }
                 break;
@@ -310,7 +318,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                     LinkedList<String> loggedStats = new LinkedList<String>();
                     ConcurrentLinkedQueue<Betnik> blockedBy = userMe.getBlockedBy();
                     for(Betnik b: loggedInUsers){
-                        if(!blockedBy.contains(b) && !b.getBlockedBy().contains(userMe)){
+                        if(!blockedBy.contains(b) && !b.getBlockedBy().contains(userMe)&& !(b==userMe)){
                             String bStat = "";
                             bStat = bStat+b.getAge();
                             bStat = bStat+" "+b.getPosts().size();
@@ -319,10 +327,17 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                             loggedStats.add(bStat);
                         }
                     }
+                    ack.add(loggedStats.remove());
+                    List<String> ackCopy = new LinkedList<String>();
+                    ackCopy.addAll(ack);
+                    betShlita.send(clientId,ackCopy);
                     while(!loggedStats.isEmpty()){
-                        if(ack.size()==3)
-                            ack.remove(2);
-                        betShlita.send(clientId,ack.add(loggedStats.remove()));
+                        //if(ack.size()==3)
+                        ack.remove(2);
+                        ack.add(loggedStats.remove());
+                        ackCopy.addAll(ack);
+                        System.out.println(Arrays.toString(ack.toArray()));
+                        betShlita.send(clientId,ackCopy);
                     }
                 }else{
                     betShlita.send(clientId,error);
@@ -332,7 +347,7 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 ack.add("08");
                 error.add("08");
                 if(userMe!=null){
-                    String onlyUsers = minCutMaxFlow((String) message,2);
+                    String onlyUsers = minCutMaxFlow(message,2);
                     LinkedList<String> statsToSend = new LinkedList<String>();
                     int j=0;
                     for(int i=0; i<onlyUsers.length();i++){
@@ -422,10 +437,15 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
         return null; // not registered
     }
 
-    public String shorToString(short num){
+    /*public String shorToString(short num){
         byte[] byt = shortToBytes(num);
         String a = new String(byt,0,2);
         return a;
+    }*/
+    public short bytesToShort(byte[] byteArr) {
+        short result = (short) ((byteArr[0] & 0xff) << 8);
+        result += (short) (byteArr[1] & 0xff);
+        return result;
     }
 
     public byte[] shortToBytes(short num)
