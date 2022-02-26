@@ -73,7 +73,7 @@ std::string ConnectionHandler::msgFormat(std::string line) {
         msg=opC[0]+msg;
         //std::cout<< opC<<endl;
         std::cout<< msg<<endl;
-        return msg+'\0'+'\1';
+        return msg;
     }
     if(command=="LOGOUT"){
         short opCode=3;
@@ -146,17 +146,21 @@ std::string ConnectionHandler::msgFormat(std::string line) {
     }
     if(command=="STAT"){
         short opCode=8;
-        char opC[2]=".";
+        char opC[2];
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
-        return opC+msg+'\0';
+        msg= opC[1]+msg;
+        msg=opC[0]+msg;
+        return msg+'\0';
     }
     if(command=="BLOCK"){
         short opCode=12;
-        char opC[2]=".";
+        char opC[2];
         shortToBytes(opCode,opC);
         msg=line.substr(ind+1);
-        return opC+msg+'\0';
+        msg= opC[1]+msg;
+        msg=opC[0]+msg;
+        return msg+'\0';
     }
     return "BAD";
 }
@@ -239,15 +243,26 @@ string ConnectionHandler::prepareToPrint(std::string ans) {
             return "ACK 7 "+iAge+ " "+iNumPosts+" "+numOfFollowers+" "+numOFFollowing;
         }
         if(operation==8){
-            char* a=strcpy(new char[2],ans.substr(4,6).c_str());
+            char a[2];
+            a[0]=ans[4];
+            a[1]=ans[5];
             short age=bytesToShort(a);
             string iAge= std::to_string(int(age));
-            char* n=strcpy(new char[2],ans.substr(6,8).c_str());
+            //char* n=strcpy(new char[2],ans.substr(6,8).c_str());
+            char n[2];
+            n[0]=ans[6];
+            n[1]=ans[7];
             short numPosts=bytesToShort(n);
             string iNumPosts=std::to_string(int(numPosts));
-            char* nf1=strcpy(new char[2],ans.substr(8,10).c_str());
+            //char* nf1=strcpy(new char[2],ans.substr(8,10).c_str());
+            char nf1[2];
+            nf1[0]=ans[8];
+            nf1[1]=ans[9];
             string numOfFollowers=std::to_string(int(bytesToShort(nf1)));
-            char* nf2=strcpy(new char[2],ans.substr(10,12).c_str());
+            //char* nf2=strcpy(new char[2],ans.substr(10,12).c_str());
+            char nf2[2];
+            nf2[0]=ans[10];
+            nf2[1]=ans[11];
             string numOFFollowing=std::to_string(int(bytesToShort(nf2)));
             return "ACK 8 "+iAge+ " "+iNumPosts+" "+numOfFollowers+" "+numOFFollowing;
         }

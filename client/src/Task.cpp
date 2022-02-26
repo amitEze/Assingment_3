@@ -20,7 +20,11 @@ void Task::operator()() {
                 break;
             }
             // connectionHandler.sendLine(line) appends '\n' to the message. Therefor we send len+1 bytes.
-            std::cout << "Sent " << len + 1 << " bytes to server" << std::endl;}
-        else std::cout<<"not a vallid command!"<<std::endl;
+                std::cout << "Sent " << len + 1 << " bytes to server" << std::endl;
+            }
+        if(msg=="BAD"){
+            std::cout << "not a valid command!" << std::endl;
+        }
+        //else std::cout<<"not a vallid command!"<<std::endl;
     }
 }
