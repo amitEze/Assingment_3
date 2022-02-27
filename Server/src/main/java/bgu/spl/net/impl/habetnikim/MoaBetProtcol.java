@@ -208,11 +208,15 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                     for(int i=0; i<content.length()-1;i++){ //finds all usernames in content
                         if(content.charAt(i)=='@'){
                             int endOfUsername=i+1;
-                            while( endOfUsername<content.length()-1 && content.charAt(endOfUsername)!=' '){
+                            while( endOfUsername < content.length()-1 && content.charAt(endOfUsername)!=' '){
                                 endOfUsername++;
-                                System.out.println("endOfUsername: "+endOfUsername);
                             }
-                            Betnik u = getUserByName(content.substring(i+1,endOfUsername+1));
+                            System.out.println("user name in content: "+content.substring(i+1,endOfUsername));
+                            Betnik u;
+                            if(content.charAt(endOfUsername)==' ')
+                                u = getUserByName(content.substring(i+1,endOfUsername));
+                            else
+                                u = getUserByName(content.substring(i+1));
                             if(u!=null && !(userMe.getBlockedBy().contains(u))){
                                 usersInContent.add(u);
                             }
@@ -234,9 +238,10 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                     }
                     for(Betnik b: usersToSend){
                         //send them messages
-                        //ack.add(content);
                         if(b.getCHandler()!=null){
-                            betShlita.send(b.getConnectionId(),notification); //for sure?
+                            List<String> notfCopy= new LinkedList<String>();
+                            notfCopy.addAll(notification);
+                            betShlita.send(b.getConnectionId(                                                                                                                                                                                                                                                                                                                                                                               ),notfCopy); //for sure?
                         }
                         else{
                             b.getUnseeNotifications().add(notification);
