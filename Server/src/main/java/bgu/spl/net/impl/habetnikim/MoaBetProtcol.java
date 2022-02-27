@@ -258,17 +258,17 @@ public class MoaBetProtcol implements BidiMessagingProtocol {
                 //case pm
                 ack.add("06");
                 error.add("06");
-                String dest=minCutMaxFlow((String) message,2);
+                String dest=minCutMaxFlow(message,2);
                 System.out.println("dest name "+dest);
-                String content=minCutMaxFlow((String) message,3);
-                String timing= minCutMaxFlow((String)message,4);
+                String content=minCutMaxFlow(message,3);
+                String timing= minCutMaxFlow(message,4);
                 if(getUser()!=null){ //logged in
                     //notification.add("\0"+userMe.getUserName()+'\0'+content+'\0');
                     if(getUserByName(dest)!=null){//recipient registered
                         if(getUser().getFollowing().contains(getUserByName(dest))){//following recipient
                             for(String w:bannedWords){ //filtering message
                                 if(content.contains(w)){
-                                    content.replaceAll(w,"<filtered>");
+                                    content = content.replaceAll(w,"<filtered>");
                                 }
                             }
                             getUser().addPM(content); //add pm to sending username pms list
