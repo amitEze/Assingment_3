@@ -2,6 +2,7 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.bidi.BidiMessagingProtocol;
+import bgu.spl.net.impl.habetnikim.ConnectionsImpl;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -16,12 +17,13 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
     private BufferedInputStream in;
     private BufferedOutputStream out;
     private volatile boolean connected = true;
-    private BufferedOutputStream pushOut;
+    //private BufferedOutputStream pushOut;
 
     public BlockingConnectionHandler(Socket sock, MessageEncoderDecoder<T> reader, BidiMessagingProtocol<T> protocol) {
         this.sock = sock;
         this.encdec = reader;
         this.protocol = protocol;
+        protocol.start(ConnectionsImpl.getInstance().addHandelr(this),ConnectionsImpl.getInstance());
     }
 
     @Override
@@ -52,10 +54,10 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
     }
 
     public void send(T msg){
-        try (Socket sock = this.sock) {
-            pushOut = new BufferedOutputStream(sock.getOutputStream());
-            pushOut.write(encdec.encode(msg));
-            pushOut.flush();
+        try {
+            out = new BufferedOutputStream(sock.getOutputStream());
+            out.write(encdec.encode(msg));
+            out.flush();
         }catch (IOException ex) {
             ex.printStackTrace();
         }
